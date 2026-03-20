@@ -27,7 +27,11 @@ import { createClient } from '@/lib/supabase/server'
 
 function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
   const apiKey = process.env.MAILGUN_API_KEY
-  if (!apiKey) return false
+
+  if (!apiKey) {
+    console.log("mailgun API key not found")
+    return false
+  }
 
   const digest = createHmac('sha256', apiKey)
     .update(timestamp + token)
@@ -48,10 +52,11 @@ export async function POST(request: NextRequest) {
 
     try {
       if (!verifyMailgunSignature(timestamp, token, signature)) {
+        console.log("mailgun signature invalid (1)")
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     } catch (e) {
-      console.error('Signature verification failed:', e)
+      console.error("mailgun signature invalid (2)")
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
