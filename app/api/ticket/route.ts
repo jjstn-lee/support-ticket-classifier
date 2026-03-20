@@ -45,5 +45,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save ticket' }, { status: 500 })
   }
 
+  console.log("received new email! sending success response...")
   return NextResponse.json({ success: true })
 }
