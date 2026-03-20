@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const dateHeader = formData.get('Date')?.toString() || formData.get('date')?.toString() || null
     const subject = formData.get('subject')?.toString() || 'No subject'
     const body = (formData.get('stripped-text') || formData.get('body-plain'))?.toString() || ''
-    const category = categorize(subject, body) // OpenAI API call
+    const category = await categorize(subject, body) as string // OpenAI API call
 
     // const ticketId = generateTicketId()
     
