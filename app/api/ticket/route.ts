@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import crypto from 'crypto';
 
 // function generateTicketId(): string {
 //   const now = new Date();
@@ -33,11 +34,12 @@ function verifyMailgunSignature(timestamp: string, token: string, signature: str
     return false
   }
 
-  const digest = createHmac('sha256', apiKey)
-    .update(timestamp + token)
-    .digest('hex')
-
-  return digest === signature
+  const encodedToken = crypto
+        .createHmac('sha256', apiKey)
+        .update(timestamp.concat(token))
+        .digest('hex')
+  console.log(`in verifyMailgunSignature: ${ encodedToken === signature }`)
+  return (encodedToken === signature)
 }
 
 export async function POST(request: NextRequest) {
