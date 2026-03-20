@@ -5,6 +5,7 @@ import { createHmac } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto';
 import { Category, categorize } from '@/lib/qwen/categorizer'
+import { mg, sendMessage } from '@/lib/mailgun/client'
 
 // function generateTicketId(): string {
 //   const now = new Date();
@@ -87,14 +88,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save ticket', details: error.message }, { status: 500 })
     }
 
+    sendMessage(sender, subject, messageID)
     console.log("Success!")
-    // for (const [key, value] of formData.entries()) {
-    //   console.log(key, value)
-    // }
-
-    sendReceipt(sender, subject, body, messageID)
-
-
     return NextResponse.json({
       success: true,
       // ticketId,
@@ -107,35 +102,35 @@ export async function POST(request: NextRequest) {
 }
 
 
-async function sendReceipt(sender: string, subject: string, body: string, messageID: string) {
-  // send success message to recipient
-  const autoReplyMessage = {
-    from: "Auto Reply <reply@yourdomain.com>",
-    to: sender,
-    subject: `Re: ${subject}`,
-    text: "Thanks for your email! We've entered your complaint into our system and will get back to you shortly.",
-    "h:In-Reply-To": messageID,
-    "h:References": messageID
-  };
+// async function sendReceipt(sender: string, subject: string, body: string, messageID: string) {
+//   // send success message to recipient
+//   const autoReplyMessage = {
+//     from: "ticket@mg.justin-hisung-lee.dev",
+//     to: sender,
+//     subject: `Re: ${subject}`,
+//     text: "Thanks for your email! We've entered your complaint into our system and will get back to you shortly.",
+//     "h:In-Reply-To": messageID,
+//     "h:References": messageID
+//   };
 
-  const url = `https://api.mailgun.net/v3/${process.env.MAILGUN_DOMAIN}/messages`;
-  const responseBody = new URLSearchParams();
-  for (const [key, value] of Object.entries(autoReplyMessage)) {
-    if (value) responseBody.append(key, value.toString());
-  }
+//   const url = `https://api.mailgun.net/v3/${process.env.MAILGUN_DOMAIN}/messages`;
+//   const responseBody = new URLSearchParams();
+//   for (const [key, value] of Object.entries(autoReplyMessage)) {
+//     if (value) responseBody.append(key, value.toString());
+//   }
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: responseBody.toString()
-  });
+//   const response = await fetch(url, {
+//     method: "POST",
+//     headers: {
+//       "Authorization": `Basic ${Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString("base64")}`,
+//       "Content-Type": "application/x-www-form-urlencoded"
+//     },
+//     body: responseBody.toString()
+//   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error("Mailgun error:", text);
-    return NextResponse.json({ ok: false, error: text }, { status: 500 });
-  }
-}
+//   if (!response.ok) {
+//     const text = await response.text();
+//     console.error("Mailgun error:", text);
+//     return NextResponse.json({ ok: false, error: text }, { status: 500 });
+//   }
+// }
