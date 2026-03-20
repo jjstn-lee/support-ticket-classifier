@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
       timestamp: dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString(),
     })
 
-    if (error) {
-      console.error('Supabase insert error:', error)
-      return NextResponse.json({ error: 'Failed to save ticket', details: error.message }, { status: 500 })
-    }
+    // if (error) {
+    //   console.error('Supabase insert error:', error)
+    //   return NextResponse.json({ error: 'Failed to save ticket', details: error.message }, { status: 500 })
+    // }
 
     console.log('Received new email! Sending success response...')
     return NextResponse.json({ success: true })
