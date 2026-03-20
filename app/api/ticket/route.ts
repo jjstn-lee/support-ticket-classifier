@@ -1,37 +1,39 @@
+"use server";
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createHmac } from 'crypto'
+// import { createHmac } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 
 // export const dynamic = 'force-dynamic'
 
-function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
-  const apiKey = process.env.MAILGUN_API_KEY
-  if (!apiKey) return false
+// function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
+//   const apiKey = process.env.MAILGUN_API_KEY
+//   if (!apiKey) return false
 
-  const digest = createHmac('sha256', apiKey)
-    .update(timestamp + token)
-    .digest('hex')
+//   const digest = createHmac('sha256', apiKey)
+//     .update(timestamp + token)
+//     .digest('hex')
 
-  return digest === signature
-}
+//   return digest === signature
+// }
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = createClient()
     const formData = await request.formData()
 
-    const timestamp = formData.get('timestamp')?.toString() || ''
-    const token = formData.get('token')?.toString() || ''
-    const signature = formData.get('signature')?.toString() || ''
+    // const timestamp = formData.get('timestamp')?.toString() || ''
+    // const token = formData.get('token')?.toString() || ''
+    // const signature = formData.get('signature')?.toString() || ''
 
-    try {
-      if (!verifyMailgunSignature(timestamp, token, signature)) {
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
-    } catch (e) {
-      console.error('Signature verification failed:', e)
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    }
+    // try {
+    //   if (!verifyMailgunSignature(timestamp, token, signature)) {
+    //     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    //   }
+    // } catch (e) {
+    //   console.error('Signature verification failed:', e)
+    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    // }
 
     const sender = formData.get('sender')?.toString() || 'unknown sender'
     const dateHeader = formData.get('Date')?.toString() || formData.get('date')?.toString() || null
