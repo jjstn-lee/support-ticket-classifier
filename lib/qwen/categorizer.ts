@@ -34,37 +34,30 @@ interface NvidiaResponse {
  
 export async function categorize(subject: string, body: string): Promise<string> {
     
-// TEMPORARILY COMMENTED OUT BCE I DON'T WANNA GET RATE LIMITED
 
-//   const response = await fetch(INVOKE_URL, {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${NVIDIA_API_KEY}`,
-//       Accept: "application/json",
-//     },
-//     body: JSON.stringify({
-//       model: "qwen/qwen3.5-122b-a10b",
-//       messages: [{ role: "user", content: buildPrompt(subject, body) }],
-//       max_tokens: 16384,
-//       temperature: 0.6,
-//       top_p: 0.95,
-//       stream: false,
-//       chat_template_kwargs: { enable_thinking: true },
-//     }),
-//   });
+const response = await fetch(INVOKE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${NVIDIA_API_KEY}`,
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      model: "qwen/qwen3.5-122b-a10b",
+      messages: [{ role: "user", content: buildPrompt(subject, body) }],
+      max_tokens: 16384,
+      temperature: 0.6,
+      top_p: 0.95,
+      stream: false,
+      chat_template_kwargs: { enable_thinking: true },
+    }),
+  });
  
-//   if (!response.ok) {
-//     const errorText = await response.text();
-//     throw new Error(`NVIDIA API error ${response.status}: ${errorText}`);
-//   }
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`NVIDIA API error ${response.status}: ${errorText}`);
+  }
  
-//   const data: NvidiaResponse = await response.json();
-//   return data.choices[0].message.content;
-
-
-
-  return "usage";
+  const data: NvidiaResponse = await response.json();
+  return data.choices[0].message.content;
 }
-
-
