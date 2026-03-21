@@ -18,4 +18,6 @@ export function sendMessage(sender: string, subject: string, messageID: string) 
     })
     .then(msg => console.log(msg)) // logs response data
     .catch(err => console.error(err)); // logs any error
+
+    console.log("in mailgun/client.ts, successfully sent message")
 }
