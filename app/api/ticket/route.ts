@@ -28,8 +28,6 @@ import { mg, sendMessage } from '@/lib/mailgun/client'
 
 // export const dynamic = 'force-dynamic'
 
-
-
 function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
   const webhookKey = process.env.MAILGUN_WEBHOOK_KEY
 
@@ -100,7 +98,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error', details: e instanceof Error ? e.message : 'Unknown error' }, { status: 500 })
   }
 }
-
 
 // async function sendReceipt(sender: string, subject: string, body: string, messageID: string) {
 //   // send success message to recipient

@@ -1,10 +1,11 @@
-import Mailgun from 'mailgun.js'
+import FormData from 'form-data';
+import Mailgun from 'mailgun.js';
 
 const mailgun = new Mailgun(FormData); // or const formData = require('form-data');
 
-export const mg = mailgun.client({username: 'api', key: process.env.MAILGUN_API_KEY || 'MAILGUN_API_KEY'});
+export const mg = mailgun.client({username: 'api', key: process.env.MAILGUN_API_KEY!});
 
-
+console.log('API Key present:', !!process.env.MAILGUN_API_KEY);
 
 export function sendMessage(sender: string, subject: string, messageID: string) {
     mg.messages.create('mg.justin-hisung-lee.dev', {
@@ -17,5 +18,4 @@ export function sendMessage(sender: string, subject: string, messageID: string) 
     })
     .then(msg => console.log(msg)) // logs response data
     .catch(err => console.error(err)); // logs any error
-
 }
