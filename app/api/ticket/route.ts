@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // taking email data from form
-    const messageID = formData.get('Message-ID')?.toString() || 'No Message-ID'
+    const messageID = formData.get('Message-Id')?.toString() || 'No Message-Id'
     const sender = formData.get('sender')?.toString() || 'unknown sender'
     const dateHeader = formData.get('Date')?.toString() || formData.get('date')?.toString() || null
     const subject = formData.get('subject')?.toString() || 'No subject'
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     sendMessage(sender, subject, messageID)
-    //sanity check
+    // sanity check for what formdata looks like
     for (const [key, value] of formData.entries()) {
       let stringValue: string;
 
