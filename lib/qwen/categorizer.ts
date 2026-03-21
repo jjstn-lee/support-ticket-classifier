@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { readFile } from 'node:fs/promises';
-export type Category = "usage" | "account" | "feedback" | "education & career";
+export type Category = "usage" | "account" | "feedback" | "education | career";
 
 const INVOKE_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 
@@ -15,13 +15,13 @@ function buildPrompt(subject: string, body: string) {
         - "usage": Questions or issues about how to use the product, features, errors, bugs, or performance.
         - "account": Issues related to login, billing, subscriptions, account settings, or personal data.
         - "feedback": Suggestions, feature requests, opinions, compliments, or complaints not tied to a specific usage issue.
-        - "education & career": Clarifying questions about course material or issues related to scheduling tests
+        - "education": Clarifying questions about course material or issues related to scheduling tests
         - "career": Issues related to job placement, career coaching, employers, etc.
 
         Instructions:
         - Choose the single best category.
         - Respond with ONLY the category name (no explanation).
-        - Respond with plain text only. Do not use markdown, bullet points, headers, special characters, or formatting of any kind.
+        - Respond with plain text only. Do not use markdown, bullet points, headers, special characters, newline characters, or formatting of any kind.
 
         Email Subject:
         ${subject}
@@ -62,6 +62,6 @@ export async function categorize(subject: string, body: string): Promise<string>
     const data: NvidiaResponse = await response.json();
     return data.choices[0].message.content
       .trim()
-      .replace(/[\n\r]+/g, '')           // newlines → space
+      .replace(/[\n\r]+/g, '')           // newlines
       .replace(/[*_~`#>]+/g, '')          // markdown symbols
 }
