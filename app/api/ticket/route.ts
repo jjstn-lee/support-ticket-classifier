@@ -3,24 +3,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import crypto from 'crypto';
-import { Category, categorize } from '@/lib/qwen/categorizer'
+import { Category, categorizeEmail } from '@/lib/qwen/categorizer'
 import { mg, sendMessage } from '@/lib/mailgun/client'
-
-function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
-  const webhookKey = process.env.MAILGUN_WEBHOOK_KEY
-
-  if (!webhookKey) {
-    console.log("mailgun API key not found")
-    return false
-  }
-
-  const encodedToken = crypto
-        .createHmac('sha256', webhookKey)
-        .update(timestamp.concat(token))
-        .digest('hex')
-  console.log(`in verifyMailgunSignature: ${ encodedToken === signature }`)
-  return (encodedToken === signature)
-}
+import { verifyMailgunSignature } from '@/lib/mailgun/signature';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,46 +27,56 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log("===in POST -> /api/ticket/===");
   try {
+    console.log("in try-branch...");
     const contentType = request.headers.get('content-type');
 
     if (!contentType?.includes('multipart/form-data') && !contentType?.includes('application/x-www-form-urlencoded')) {
       return NextResponse.json({ error: 'Invalid Content-Type. Expected multipart/form-data or application/x-www-form-urlencoded' }, { status: 400 });
     }
-
+    console.log("creating supabase client...")
     const supabase = createClient()
     const formData = await request.formData()
 
+    console.log("parsing mailgun part of formdata...")
     // mailgun verification
     const timestamp = formData.get('timestamp')?.toString() || ''
     const token = formData.get('token')?.toString() || ''
     const signature = formData.get('signature')?.toString() || ''
 
+    console.log("verifying mailgun sig...")
     try {
       if (!verifyMailgunSignature(timestamp, token, signature)) {
-        console.log("mailgun signature invalid (1)")
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+        console.error("Mailgun signature invalid (1)"); // should now show in terminal
+        process.stdout.write("Mailgun signature invalid (1)\n");
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
     } catch (e) {
-      console.error("mailgun signature invalid (2)")
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      console.error("Mailgun signature invalid (2)", e);
+      process.stdout.write("Mailgun signature invalid (2)\n");
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
+    console.log("parsing the rest of formdata...")
     // taking email data from form
     const messageID = formData.get('Message-Id')?.toString() || 'No Message-Id'
     const sender = formData.get('sender')?.toString() || 'unknown sender'
     const dateHeader = formData.get('Date')?.toString() || formData.get('date')?.toString() || null
     const subject = formData.get('subject')?.toString() || 'No subject'
     const body = (formData.get('stripped-text') || formData.get('body-plain'))?.toString() || ''
-    const category = await categorize(subject, body) as string // OpenAI API call
+    const category = await categorizeEmail(subject, body) as string // OpenAI API call
+    const generated: boolean = (String(formData.get('generated')).toLowerCase() === 'true') || false; 
 
+    console.log("inserting into supabase...")
     const { error } = await supabase.from('tickets').insert({
       // id: ticketId,
       sender,
-      timestamp: dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString(),
+      timestamp: dateHeader ? new Date(parseInt(dateHeader) * 1000).toISOString() : new Date().toISOString(),
       subject,
       body,
       category,
+      generated,
     })
 
     if (error) {
@@ -89,19 +84,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to save ticket', details: error.message }, { status: 500 })
     }
 
-    await sendMessage(sender, subject, messageID)
-    // sanity check for what formdata looks like
-    for (const [key, value] of formData.entries()) {
-      let stringValue: string;
+    console.log("sending message to sender...")
 
-      if (typeof value === "string") {
-        stringValue = value;
-      } else {
-        // If it's a File, you can use its name or read it differently
-        stringValue = value.name;
+
+      
+      if (!generated) {
+        await sendMessage(sender, subject, messageID)
       }
-    console.log(key, stringValue.slice(0, 50));
-  }
+
+    // sanity check for what formdata looks like
+    // for (const [key, value] of formData.entries()) {
+    //   let stringValue: string;
+
+    //   if (typeof value === "string") {
+    //     stringValue = value;
+    //   } else {
+    //     // If it's a File, you can use its name or read it differently
+    //     stringValue = value.name;
+    //   }
+    // console.log(key, stringValue.slice(0, 50));
+    // }
     console.log("Success!")
     return NextResponse.json({
       success: true,

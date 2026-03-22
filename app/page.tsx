@@ -69,6 +69,7 @@ function ChartCard({ title, children, span = 1 }: ChartCardProps) {
 const tooltipStyle = {
   contentStyle: { background: "#1a2035", border: `1px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.text, fontSize: 12 },
   labelStyle: { color: COLORS.accent },
+  itemStyle: { color: COLORS.text },
   cursor: { fill: COLORS.accentDim },
 };
 
@@ -185,6 +186,24 @@ export default function Home() {
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ color: COLORS.muted, fontSize: 11 }}>{stats?.total} tickets</span>
           <button
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/ticket/generate', { method: 'POST' });
+                const result = await response.json();
+                console.log(result);
+              } catch (error) {
+                const response = await fetch('/api/ticket/generate', { method: 'POST' });
+                console.log(response);
+                console.error(error);
+              }
+            }}
+            style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, transition: "color 0.15s" }}
+            onMouseEnter={(e) => e.currentTarget.style.color = COLORS.accent}
+            onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
+          >
+            + GENERATE
+          </button>
+          <button
             className="refresh-btn"
             onClick={() => window.location.reload()}
             style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1 }}
@@ -198,7 +217,7 @@ export default function Home() {
         {/* Charts Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
           {/* Volume by Category */}
-          <ChartCard title="Volume by Category">
+          <ChartCard title="Volume by Category" span={2}>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={stats!.volumeByCat} layout="vertical" barCategoryGap="25%">
                 <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} horizontal={false} />
