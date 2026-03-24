@@ -71,6 +71,9 @@ export async function POST(request: NextRequest) {
     const category = await categorizeEmail(subject, body) as string // OpenAI API call
     const generated: boolean = (String(formData.get('generated')).toLowerCase() === 'true') || false; 
 
+    console.log(dateHeader)
+
+
     console.log("inserting into supabase...")
     const { error } = await supabase.from('tickets').insert({
       // id: ticketId,
