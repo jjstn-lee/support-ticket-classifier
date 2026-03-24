@@ -8,20 +8,21 @@ const recipient = "ticket@justin-hisung-lee.dev"
 
 async function generate(retries = 3, delay = 500) {
   let lastError;
-
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await generateHelper();
-    } catch (err) {
-      lastError = err;
-      console.log(`   attempt ${i}`)
-      console.log(`   lastError ${lastError}`)
-      await new Promise(res => setTimeout(res, delay * (i + 1)));
+  for (let j = 0; j < 3; j++) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          return await generateHelper();
+        } catch (err) {
+          lastError = err;
+          console.log(`   attempt ${i}`)
+          console.log(`   lastError ${lastError}`)
+          await new Promise(res => setTimeout(res, delay * (i + 1)));
+        }
+      }
+    
+      throw lastError;
     }
   }
-
-  throw lastError;
-}
 
 async function generateHelper() {
     // generate mailgun signature (timestamp + token + signature)
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
     console.log(`ticketEndpoint: ${ ticketEndpoint }`)
     
     const payload = await generate()
-    if (payload instanceof Error) {
+    if (payload instanceof Error || payload == null) {
         console.error('Stopping execution due to error:', payload);
         return; // prevents further computation
     }

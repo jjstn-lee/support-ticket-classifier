@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell,
@@ -14,6 +14,7 @@ interface Ticket {
   subject: string;
   body: string;
   category: string;
+  generated: boolean;
 }
 
 interface DayVolume {
@@ -34,17 +35,18 @@ interface Stats {
 
 // ── Palette ────────────────────────────────────────────────────────────────
 const COLORS = {
-  bg: "#0b0e14",
-  surface: "#12161f",
-  border: "#1e2535",
-  accent: "#00e5c8",
-  accentDim: "#00e5c820",
-  accentMid: "#00e5c860",
+  // Mirrored from the requested palette
+  bg: "#fffbf5",            // --floral-white
+  surface: "whitesmoke",     // --white-smoke
+  border: "#f76754ff",       // --white-smoke-2
+  accent: "#f24029",       // --red
+  accentDim: "#f2402980",  // translucent red for subtle hover/cursor
+  accentMid: "#f2402940",
   gold: "#f0c040",
-  rose: "#f05060",
-  text: "#e2e8f0",
-  muted: "#64748b",
-  cats: ["#00e5c8", "#f0c040", "#f05060", "#818cf8", "#fb923c", "#34d399", "#f472b6"],
+  rose: "#f24029",
+  text: "#1a1a1aff",         // --dark-slate-grey
+  muted: "#1a1a1aff",        // --grey
+  bars: "#E78B48ff",
 } as const;
 
 // ── Chart Card ─────────────────────────────────────────────────────────────
@@ -57,8 +59,8 @@ interface ChartCardProps {
 function ChartCard({ title, children, span = 1 }: ChartCardProps) {
   return (
     <div style={{
-      background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-      borderRadius: 12, padding: "20px 24px", gridColumn: `span ${span}`,
+      background: COLORS.surface, border: `2px solid ${COLORS.border}`,
+      borderRadius: 16, padding: "20px 24px", gridColumn: `span ${span}`,
     }}>
       <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: COLORS.muted, fontFamily: "'DM Mono', monospace", marginBottom: 16 }}>{title}</div>
       {children}
@@ -67,7 +69,7 @@ function ChartCard({ title, children, span = 1 }: ChartCardProps) {
 }
 
 const tooltipStyle = {
-  contentStyle: { background: "#1a2035", border: `1px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.text, fontSize: 12 },
+  contentStyle: { background: "#b2b2b2ff", border: `2px solid ${COLORS.border}`, borderRadius: 8, color: COLORS.text, fontSize: 12 },
   labelStyle: { color: COLORS.accent },
   itemStyle: { color: COLORS.text },
   cursor: { fill: COLORS.accentDim },
@@ -80,37 +82,45 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [generatedFilter, setGeneratedFilter] = useState<string>("all");
+  // generation UI state
+  const [generating, setGenerating] = useState<boolean>(false);
+  const [generateStatus, setGenerateStatus] = useState<string | null>(null);
+  const [showGenerateTooltip, setShowGenerateTooltip] = useState<boolean>(false);
+  const [showRefreshTooltip, setShowRefreshTooltip] = useState<boolean>(false);
+
+  const fetchData = useCallback(async (showLoadingSpinner = false) => {
+    try {
+      if (showLoadingSpinner) setLoading(true);
+      const [ticketsRes, statsRes] = await Promise.all([
+        fetch('/api/ticket', { method: 'GET' }),
+        fetch('/api/ticket/stats', { method: 'GET' })
+      ]);
+
+      if (!ticketsRes.ok || !statsRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const ticketsData = await ticketsRes.json();
+      const statsData = await statsRes.json();
+
+      setTickets(ticketsData.tickets || []);
+      setStats(statsData);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setTickets([]);
+      setStats(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [ticketsRes, statsRes] = await Promise.all([
-          fetch('/api/ticket', { method: 'GET' }),
-          fetch('/api/ticket/stats', { method: 'GET' })
-        ]);
-
-        if (!ticketsRes.ok || !statsRes.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const ticketsData = await ticketsRes.json();
-        const statsData = await statsRes.json();
-
-        setTickets(ticketsData.tickets || []);
-        setStats(statsData);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-        setTickets([]);
-        setStats(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+    fetchData(true);
+  }, [fetchData]);
 
 
   // ── Loading State ──────────────────────────────────────────────────────
@@ -118,7 +128,6 @@ export default function Home() {
     return (
       <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", color: COLORS.text }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Space+Grotesk:wght@400;600;700&display=swap');
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { background: ${COLORS.bg}; }
         `}</style>
@@ -132,7 +141,6 @@ export default function Home() {
     return (
       <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", color: COLORS.text }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Space+Grotesk:wght@400;600;700&display=swap');
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { background: ${COLORS.bg}; }
         `}</style>
@@ -146,7 +154,6 @@ export default function Home() {
     return (
       <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", color: COLORS.text }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Space+Grotesk:wght@400;600;700&display=swap');
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { background: ${COLORS.bg}; }
         `}</style>
@@ -162,11 +169,18 @@ export default function Home() {
     );
   }
 
+  const displayedTickets = (tickets ?? [])
+    .filter(t => categoryFilter === "all" || t.category === categoryFilter)
+    .filter(t => generatedFilter === "all" || (generatedFilter === "generated" ? t.generated : !t.generated))
+    .sort((a, b) => {
+      const diff = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      return sortOrder === "asc" ? diff : -diff;
+    });
+
   // ── Dashboard ──────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.text, fontFamily: "'DM Mono', monospace" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Space+Grotesk:wght@400;600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${COLORS.bg}; }
         ::-webkit-scrollbar { width: 6px; }
@@ -177,39 +191,121 @@ export default function Home() {
       `}</style>
 
       {/* Top Nav */}
-      <div style={{ borderBottom: `1px solid ${COLORS.border}`, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", background: COLORS.surface }}>
+      <div style={{ borderBottom: `2px solid ${COLORS.border}`, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", background: COLORS.surface }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ color: COLORS.accent, fontSize: 18 }}>◈</span>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15 }}>Support Ticket Classifier</span>
-          <span style={{ background: COLORS.accentDim, border: `1px solid ${COLORS.accentMid}`, borderRadius: 4, padding: "2px 8px", fontSize: 10, color: COLORS.accent, letterSpacing: 1 }}>EMERGE CAREER</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ color: COLORS.muted, fontSize: 11 }}>{stats?.total} tickets</span>
-          <button
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/ticket/generate', { method: 'POST' });
-                const result = await response.json();
-                console.log(result);
-              } catch (error) {
-                const response = await fetch('/api/ticket/generate', { method: 'POST' });
-                console.log(response);
-                console.error(error);
-              }
-            }}
-            style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, transition: "color 0.15s" }}
-            onMouseEnter={(e) => e.currentTarget.style.color = COLORS.accent}
-            onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
-          >
-            + GENERATE
-          </button>
-          <button
-            className="refresh-btn"
-            onClick={() => window.location.reload()}
-            style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1 }}
-          >
-            ↻ REFRESH
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {/* <span style={{ color: COLORS.muted, fontSize: 11 }}>{stats?.total} tickets</span> */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ position: "relative" }}>
+              <button
+              onClick={async () => {
+                if (generating) return;
+                setGenerating(true);
+                setGenerateStatus("Generating…");
+                try {
+                  const response = await fetch('/api/ticket/generate', { method: 'POST' });
+                  if (!response.ok) throw new Error(`Generate failed (${response.status})`);
+                  const result = await response.json();
+                  console.log(result);
+                  setGenerateStatus("Generated");
+                  await fetchData();
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : "Failed to generate";
+                  console.error(err);
+                  setGenerateStatus(msg);
+                } finally {
+                  setGenerating(false);
+                  // clear status after a short delay
+                  setTimeout(() => setGenerateStatus(null), 3500);
+                }
+              }}
+              disabled={generating}
+              style={{
+                background: "none",
+                border: "none",
+                color: generating ? "#ff5959ff" : COLORS.muted,
+                fontSize: 11,
+                cursor: generating ? "not-allowed" : "pointer",
+                letterSpacing: 1,
+                transition: "color 0.15s",
+                opacity: generating ? 0.85 : 1,
+              }}
+              onMouseEnter={(e) => { if (!generating) e.currentTarget.style.color = COLORS.accent; setShowGenerateTooltip(true); }}
+              onMouseLeave={(e) => { if (!generating) e.currentTarget.style.color = COLORS.muted; setShowGenerateTooltip(false); }}
+            >
+              {generating ? "GENERATING..." : "+ GENERATE"}
+            </button>
+              <div
+                role="status"
+                aria-hidden={!showGenerateTooltip}
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  background: COLORS.surface,
+                  border: `2px solid ${COLORS.border}`,
+                  color: COLORS.text,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  width: 260,
+                  boxShadow: "0 8px 24px rgba(2,6,23,0.6)",
+                  zIndex: 40,
+                  // animation: fade + slight slide (matches recharts feeling)
+                  opacity: showGenerateTooltip ? 1 : 0,
+                  transform: showGenerateTooltip ? "translateY(0)" : "translateY(-6px)",
+                  transition: "opacity 180ms ease, transform 180ms ease",
+                  pointerEvents: showGenerateTooltip ? "auto" : "none",
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 6, color: COLORS.accent }}>Generate synthetic tickets</div>
+                <div style={{ color: COLORS.muted, lineHeight: 1.3 }}>
+                  Creates a small batch of synthetic support tickets for testing and demo purposes. These are clearly marked as "generated".
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ position: "relative" }}>
+            <button
+              className="refresh-btn"
+              onClick={() => fetchData()}
+              onMouseEnter={() => setShowRefreshTooltip(true)}
+              onMouseLeave={() => setShowRefreshTooltip(false)}
+              style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1 }}
+            >
+              ↻ REFRESH
+            </button>
+            <div
+              role="status"
+              aria-hidden={!showRefreshTooltip}
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                right: 0,
+                background: COLORS.surface,
+                border: `2px solid ${COLORS.border}`,
+                color: COLORS.text,
+                padding: "8px 10px",
+                borderRadius: 8,
+                fontSize: 11,
+                width: 220,
+                boxShadow: "0 8px 24px rgba(2,6,23,0.6)",
+                zIndex: 40,
+                opacity: showRefreshTooltip ? 1 : 0,
+                transform: showRefreshTooltip ? "translateY(0)" : "translateY(-6px)",
+                transition: "opacity 180ms ease, transform 180ms ease",
+                pointerEvents: showRefreshTooltip ? "auto" : "none",
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 6, color: COLORS.accent }}>Refresh data</div>
+              <div style={{ color: COLORS.muted, lineHeight: 1.3 }}>
+                Reloads the dashboard and fetches the latest tickets and stats from the server.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -228,7 +324,7 @@ export default function Home() {
                   {stats!.volumeByCat.map((_, i) => (
                     <Cell
                       key={i}
-                      fill={COLORS.cats[i % COLORS.cats.length]}
+                      fill={COLORS.bars}
                     />
                   ))}
                 </Bar>
@@ -244,7 +340,7 @@ export default function Home() {
                 <XAxis dataKey="date" tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip {...tooltipStyle} />
-                <Bar dataKey="count" fill={COLORS.accent} radius={[4, 4, 0, 0]} name="Tickets" />
+                <Bar dataKey="count" fill={COLORS.bars} radius={[4, 4, 0, 0]} name="Tickets" />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -254,9 +350,41 @@ export default function Home() {
         </div>
 
         {/* Raw Table */}
-        <div style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, textTransform: "uppercase" }}>
-            Ticket Log — {tickets.length} records
+        <div style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span>Ticket Log — {displayedTickets.length} records</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <button
+                onClick={() => setSortOrder(o => o === "desc" ? "asc" : "desc")}
+                style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "color 0.15s" }}
+                onMouseEnter={(e) => e.currentTarget.style.color = COLORS.accent}
+                onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
+              >
+                Date {sortOrder === "desc" ? "↓" : "↑"}
+              </button>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
+              >
+                <option value="all">All Categories</option>
+                <option value="usage">Usage</option>
+                <option value="account">Account</option>
+                <option value="feedback">Feedback</option>
+                <option value="education">Education</option>
+                <option value="career">Career</option>
+              </select>
+              <select
+                value={generatedFilter}
+                onChange={(e) => setGeneratedFilter(e.target.value)}
+                style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
+              >
+                <option value="all">All Sources</option>
+                <option value="generated">Generated</option>
+                <option value="real">Real</option>
+              </select>
+
+            </div>
           </div>
           <div style={{ overflowX: "auto", maxHeight: "600px", overflowY: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -264,13 +392,14 @@ export default function Home() {
                 <tr>
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, width: 30 }}></th>
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Sender</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Subject</th>
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Date</th>
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Category</th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Subject</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>LLM-Generated</th>
                 </tr>
               </thead>
               <tbody>
-                {tickets.map((t, i) => (
+                {displayedTickets.map((t, i) => (
                   <>
                     <tr key={t.id}
                       onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
@@ -287,9 +416,10 @@ export default function Home() {
                         {expandedId === t.id ? "▼" : "▶"}
                       </td>
                       <td style={{ padding: "9px 16px", color: COLORS.text, whiteSpace: "nowrap" }}>{t.sender}</td>
+                      <td style={{ padding: "9px 16px", color: COLORS.text, maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>{t.subject}</td>
                       <td style={{ padding: "9px 16px", color: COLORS.muted, whiteSpace: "nowrap", fontSize: 11 }}>{new Date(t.timestamp).toLocaleDateString()}</td>
                       <td style={{ padding: "9px 16px", color: COLORS.accent, whiteSpace: "nowrap" }}>{t.category}</td>
-                      <td style={{ padding: "9px 16px", color: COLORS.text, maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>{t.subject}</td>
+                      <td style={{ padding: "9px 16px", color: COLORS.accent, whiteSpace: "nowrap" }}>{t.generated ? "generated" : "real"}</td>
                     </tr>
                     {expandedId === t.id && (
                       <tr style={{ background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
@@ -297,27 +427,27 @@ export default function Home() {
                           <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: 16 }}>
                             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 16 }}>
                               <div>
-                                <div style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>From</div>
-                                <div style={{ color: COLORS.text, fontSize: 12 }}>{t.sender}</div>
+                                <div style={{ fontSize: 10, color: COLORS.rose, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>From</div>
+                                <div style={{ color: COLORS.muted, fontSize: 12 }}>{t.sender}</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Category</div>
-                                <div style={{ color: COLORS.accent, fontSize: 12 }}>{t.category}</div>
+                                <div style={{ fontSize: 10, color: COLORS.rose, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Category</div>
+                                <div style={{ color: COLORS.muted, fontSize: 12 }}>{t.category}</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Date and Time</div>
-                                <div style={{ color: COLORS.text, fontSize: 12 }}>{new Date(t.timestamp).toLocaleString()}</div>
+                                <div style={{ fontSize: 10, color: COLORS.rose, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Date and Time</div>
+                                <div style={{ color: COLORS.muted, fontSize: 12 }}>{new Date(t.timestamp).toLocaleString()}</div>
                               </div>
                               <div>
-                                <div style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Subject</div>
-                                <div style={{ color: COLORS.text, fontSize: 12 }}>{t.subject}</div>
+                                <div style={{ fontSize: 10, color: COLORS.rose, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Subject</div>
+                                <div style={{ color: COLORS.muted, fontSize: 12 }}>{t.subject}</div>
                               </div>
                             </div>
                             <div style={{ marginTop: 16 }}>
-                              <div style={{ fontSize: 10, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Body</div>
+                              <div style={{ fontSize: 10, color: COLORS.rose, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Body</div>
                               <div style={{
                                 background: COLORS.bg,
-                                border: `1px solid ${COLORS.border}`,
+                                border: `2px solid ${COLORS.border}`,
                                 borderRadius: 6,
                                 padding: 12,
                                 color: COLORS.text,
@@ -340,10 +470,6 @@ export default function Home() {
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div style={{ marginTop: 24, textAlign: "center", color: COLORS.muted, fontSize: 10, letterSpacing: 2 }}>
-          BUILT FOR EMERGE CAREER · CUSTOMER ENGINEER APPLICATION
         </div>
       </div>
     </div>
