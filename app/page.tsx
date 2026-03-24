@@ -89,6 +89,7 @@ export default function Home() {
   const [generateStatus, setGenerateStatus] = useState<string | null>(null);
   const [showGenerateTooltip, setShowGenerateTooltip] = useState<boolean>(false);
   const [showRefreshTooltip, setShowRefreshTooltip] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [errors, setErrors] = useState<string[]>([]);
 
   const fetchData = useCallback(async (showLoadingSpinner = false) => {
@@ -125,7 +126,7 @@ export default function Home() {
   // ── Loading State ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", color: COLORS.text }}>
+      <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans', sans-serif", color: COLORS.text }}>
         <style>{`
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { background: ${COLORS.bg}; }
@@ -138,13 +139,13 @@ export default function Home() {
   // ── Empty State ────────────────────────────────────────────────────────
   if (!tickets || tickets.length === 0) {
     return (
-      <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace", color: COLORS.text }}>
+      <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans', sans-serif", color: COLORS.text }}>
         <style>{`
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { background: ${COLORS.bg}; }
         `}</style>
         <div style={{ maxWidth: 520, textAlign: "center" }}>
-          <h1 style={{ fontSize: 36, fontWeight: 700, color: COLORS.text, fontFamily: "'Space Grotesk', sans-serif", marginBottom: 12 }}>
+          <h1 style={{ fontSize: 36, fontWeight: 700, color: COLORS.text, fontFamily: "'Noto Sans', sans-serif", marginBottom: 12 }}>
             No Tickets Yet
           </h1>
           <p style={{ color: COLORS.muted, fontSize: 13, lineHeight: 1.7 }}>
@@ -165,7 +166,7 @@ export default function Home() {
 
   // ── Dashboard ──────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.text, fontFamily: "'DM Mono', monospace" }}>
+    <div style={{ minHeight: "100vh", background: COLORS.bg, color: COLORS.text, fontFamily: "'Noto Sans', sans-serif" }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${COLORS.bg}; }
@@ -179,8 +180,7 @@ export default function Home() {
       {/* Top Nav */}
       <div style={{ borderBottom: `2px solid ${COLORS.border}`, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", background: COLORS.surface }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ color: COLORS.accent, fontSize: 18 }}>◈</span>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15 }}>Support Ticket Classifier</span>
+          <span style={{ fontFamily: "'Noto Sans', sans-serif", fontWeight: 600, fontSize: 15 }}>Support Ticket Classifier</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* <span style={{ color: COLORS.muted, fontSize: 11 }}>{stats?.total} tickets</span> */}
@@ -218,6 +218,7 @@ export default function Home() {
                   letterSpacing: 1,
                   transition: "color 0.15s",
                   opacity: generating ? 0.85 : 1,
+                  fontFamily: "'DM Mono', monospace",
                 }}
                 onMouseEnter={(e) => { if (!generating) e.currentTarget.style.color = COLORS.accent; setShowGenerateTooltip(true); }}
                 onMouseLeave={(e) => { if (!generating) e.currentTarget.style.color = COLORS.muted; setShowGenerateTooltip(false); }}
@@ -245,6 +246,7 @@ export default function Home() {
                   transform: showGenerateTooltip ? "translateY(0)" : "translateY(-6px)",
                   transition: "opacity 180ms ease, transform 180ms ease",
                   pointerEvents: showGenerateTooltip ? "auto" : "none",
+                  fontFamily: "'DM Mono', monospace",
                 }}
               >
                 <div style={{ fontWeight: 600, marginBottom: 6, color: COLORS.accent }}>Generate synthetic tickets</div>
@@ -257,12 +259,18 @@ export default function Home() {
           <div style={{ position: "relative" }}>
             <button
               className="refresh-btn"
-              onClick={() => fetchData()}
+              onClick={async () => {
+                if (refreshing) return;
+                setRefreshing(true);
+                await fetchData();
+                setRefreshing(false);
+              }}
+              disabled={refreshing}
               onMouseEnter={() => setShowRefreshTooltip(true)}
               onMouseLeave={() => setShowRefreshTooltip(false)}
-              style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1 }}
+              style={{ background: "none", border: "none", color: refreshing ? "#ff5959ff" : COLORS.muted, fontSize: 11, cursor: refreshing ? "not-allowed" : "pointer", letterSpacing: 1, fontFamily: "'DM Mono', monospace", opacity: refreshing ? 0.85 : 1, transition: "color 0.15s" }}
             >
-              ↻ REFRESH
+              {refreshing ? "REFRESHING..." : "↻ REFRESH"}
             </button>
             <div
               role="status"
@@ -284,6 +292,7 @@ export default function Home() {
                 transform: showRefreshTooltip ? "translateY(0)" : "translateY(-6px)",
                 transition: "opacity 180ms ease, transform 180ms ease",
                 pointerEvents: showRefreshTooltip ? "auto" : "none",
+                fontFamily: "'DM Mono', monospace",
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: 6, color: COLORS.accent }}>Refresh data</div>
@@ -303,8 +312,8 @@ export default function Home() {
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={stats!.volumeByCat} layout="vertical" barCategoryGap="25%">
                 <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} horizontal={false} />
-                <XAxis type="number" tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <YAxis type="category" dataKey="category" tick={{ fill: COLORS.text, fontSize: 11, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} width={110} />
+                <XAxis type="number" tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "'Noto Sans', sans-serif" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <YAxis type="category" dataKey="category" tick={{ fill: COLORS.text, fontSize: 11, fontFamily: "'Noto Sans', sans-serif" }} axisLine={false} tickLine={false} width={110} />
                 <Tooltip {...tooltipStyle} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Tickets">
                   {stats!.volumeByCat.map((_, i) => (
@@ -323,8 +332,8 @@ export default function Home() {
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={stats!.volumeByDay} barCategoryGap="30%">
                 <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} vertical={false} />
-                <XAxis dataKey="date" tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "DM Mono" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <XAxis dataKey="date" tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "'Noto Sans', sans-serif" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: COLORS.muted, fontSize: 11, fontFamily: "'Noto Sans', sans-serif" }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip {...tooltipStyle} />
                 <Bar dataKey="count" fill={COLORS.bars} radius={[4, 4, 0, 0]} name="Tickets" />
               </BarChart>
@@ -337,7 +346,7 @@ export default function Home() {
 
         {/* Raw Table */}
         <div style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'DM Mono', monospace" }}>
             <span>Ticket Log — {displayedTickets.length} records</span>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
 
@@ -350,24 +359,24 @@ export default function Home() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead style={{ position: "sticky", top: 0, background: COLORS.surface }}>
                 <tr>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, width: 30 }}></th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Sender</th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Subject</th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, width: 30, fontFamily: "'DM Mono', monospace" }}></th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, fontFamily: "'DM Mono', monospace" }}>Sender</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, fontFamily: "'DM Mono', monospace" }}>Subject</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, fontFamily: "'DM Mono', monospace" }}>
                     <button
                       onClick={() => setSortOrder(o => o === "desc" ? "asc" : "desc")}
-                      style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "color 0.15s" }}
+                      style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "color 0.15s", fontFamily: "'DM Mono', monospace" }}
                       onMouseEnter={(e) => e.currentTarget.style.color = COLORS.accent}
                       onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
                     >
                       Date {sortOrder === "desc" ? "↓" : "↑"}
                     </button>
                   </th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, fontFamily: "'DM Mono', monospace" }}>
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
+                      style={{ background: COLORS.surface, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
                     >
                       <option value="all">All Categories</option>
                       <option value="usage">Usage</option>
@@ -377,11 +386,11 @@ export default function Home() {
                       <option value="career">Career</option>
                     </select>
                   </th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, fontFamily: "'DM Mono', monospace" }}>
                     <select
                       value={generatedFilter}
                       onChange={(e) => setGeneratedFilter(e.target.value)}
-                      style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
+                      style={{ background: COLORS.surface, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
                     >
                       <option value="all">All Sources</option>
                       <option value="generated">Generated</option>
@@ -469,7 +478,7 @@ export default function Home() {
       {errors.length > 0 && (
         <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000, maxWidth: 300 }}>
           {errors.map((err, i) => (
-            <div key={i} style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, borderRadius: 8, padding: 12, marginBottom: 8, color: COLORS.text, fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+            <div key={i} style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, borderRadius: 8, padding: 12, marginBottom: 8, color: COLORS.text, fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', fontFamily: "'DM Mono', monospace" }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ color: COLORS.rose, fontWeight: 600 }}>Error</div>
                 <button onClick={() => setErrors(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: COLORS.muted, cursor: 'pointer', fontSize: 14 }}>×</button>
