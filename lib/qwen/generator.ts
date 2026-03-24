@@ -5,9 +5,9 @@ const MLVOCA_URL = "https://mlvoca.com/api/generate";
 const MODEL = "deepseek-r1:1.5b";
 
 const prompt = `
-You are currently enrolled in an education/career program, but are running into issues with their product. Your task is to write an email complaint to the support team of
-the education and career platform you are using as a JSON object. Output ONLY one valid JSON object with EXACTLY these four
-keys: "sender", "Date", "subject", "stripped-text".
+You are currently enrolled in an education/career program, but are running into issues with their product. Your task is to write an email complaint to the support team 
+as a JSON object. Output ONLY one valid JSON object with EXACTLY these four
+keys: "sender", "subject", and "stripped-text".
 
 Rules:
 - Do not include placeholders, explanations, markdown, or extra text.
@@ -22,21 +22,18 @@ Examples of valid output:
 
 {
   "sender": "john.stewart@gmail.com",
-  "Date": "2026-03-21T16:46:08-04:00",
   "subject": "Question about Account",
   "stripped-text": "Hi,\nI am having difficulty logging in. Please help.\nBest regards,\nJohn Smith"
 }
 
 {
   "sender": "alex.rodriguez@gmail.com",
-  "Date": "2026-03-22T14:12:27-04:00",
   "subject": "Issue with Course Access and Job Applications",
   "stripped-text": "Hello,\nI recently enrolled in a certification program on your platform, but I’m unable to access some of the course materials. Additionally, a few of my job applications still show as ‘pending’ without any updates.\nCould you please look into this and let me know how to proceed?\nThank you for your assistance.\nBest regards,\nAlex Rodriguez"
 }
 
 {
   "sender": "emily.chen@outlook.com",
-  "Date": "2026-03-20T09:15:42-04:00",
   "subject": "Confusion about Using Platform Features",
   "stripped-text": "Hello,\nI'm generally confused about some features of the web application. Could you assist?\nThanks,\nEmily"
 }`;

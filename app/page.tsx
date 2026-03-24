@@ -196,48 +196,48 @@ export default function Home() {
           <span style={{ color: COLORS.accent, fontSize: 18 }}>◈</span>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15 }}>Support Ticket Classifier</span>
         </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* <span style={{ color: COLORS.muted, fontSize: 11 }}>{stats?.total} tickets</span> */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ position: "relative" }}>
               <button
-              onClick={async () => {
-                if (generating) return;
-                setGenerating(true);
-                setGenerateStatus("Generating…");
-                try {
-                  const response = await fetch('/api/ticket/generate', { method: 'POST' });
-                  if (!response.ok) throw new Error(`Generate failed (${response.status})`);
-                  const result = await response.json();
-                  console.log(result);
-                  setGenerateStatus("Generated");
-                  await fetchData();
-                } catch (err) {
-                  const msg = err instanceof Error ? err.message : "Failed to generate";
-                  console.error(err);
-                  setGenerateStatus(msg);
-                } finally {
-                  setGenerating(false);
-                  // clear status after a short delay
-                  setTimeout(() => setGenerateStatus(null), 3500);
-                }
-              }}
-              disabled={generating}
-              style={{
-                background: "none",
-                border: "none",
-                color: generating ? "#ff5959ff" : COLORS.muted,
-                fontSize: 11,
-                cursor: generating ? "not-allowed" : "pointer",
-                letterSpacing: 1,
-                transition: "color 0.15s",
-                opacity: generating ? 0.85 : 1,
-              }}
-              onMouseEnter={(e) => { if (!generating) e.currentTarget.style.color = COLORS.accent; setShowGenerateTooltip(true); }}
-              onMouseLeave={(e) => { if (!generating) e.currentTarget.style.color = COLORS.muted; setShowGenerateTooltip(false); }}
-            >
-              {generating ? "GENERATING..." : "+ GENERATE"}
-            </button>
+                onClick={async () => {
+                  if (generating) return;
+                  setGenerating(true);
+                  setGenerateStatus("Generating…");
+                  try {
+                    const response = await fetch('/api/ticket/generate', { method: 'POST' });
+                    if (!response.ok) throw new Error(`Generate failed (${response.status})`);
+                    const result = await response.json();
+                    console.log(result);
+                    setGenerateStatus("Generated");
+                    await fetchData();
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : "Failed to generate";
+                    console.error(err);
+                    setGenerateStatus(msg);
+                  } finally {
+                    setGenerating(false);
+                    // clear status after a short delay
+                    setTimeout(() => setGenerateStatus(null), 3500);
+                  }
+                }}
+                disabled={generating}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: generating ? "#ff5959ff" : COLORS.muted,
+                  fontSize: 11,
+                  cursor: generating ? "not-allowed" : "pointer",
+                  letterSpacing: 1,
+                  transition: "color 0.15s",
+                  opacity: generating ? 0.85 : 1,
+                }}
+                onMouseEnter={(e) => { if (!generating) e.currentTarget.style.color = COLORS.accent; setShowGenerateTooltip(true); }}
+                onMouseLeave={(e) => { if (!generating) e.currentTarget.style.color = COLORS.muted; setShowGenerateTooltip(false); }}
+              >
+                {generating ? "GENERATING..." : "+ GENERATE"}
+              </button>
               <div
                 role="status"
                 aria-hidden={!showGenerateTooltip}
@@ -263,7 +263,7 @@ export default function Home() {
               >
                 <div style={{ fontWeight: 600, marginBottom: 6, color: COLORS.accent }}>Generate synthetic tickets</div>
                 <div style={{ color: COLORS.muted, lineHeight: 1.3 }}>
-                  Creates a small batch of synthetic support tickets for testing and demo purposes. These are clearly marked as "generated".
+                  Creates a small batch of synthetic support tickets for testing and demo purposes.
                 </div>
               </div>
             </div>
@@ -354,35 +354,9 @@ export default function Home() {
           <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span>Ticket Log — {displayedTickets.length} records</span>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <button
-                onClick={() => setSortOrder(o => o === "desc" ? "asc" : "desc")}
-                style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "color 0.15s" }}
-                onMouseEnter={(e) => e.currentTarget.style.color = COLORS.accent}
-                onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
-              >
-                Date {sortOrder === "desc" ? "↓" : "↑"}
-              </button>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
-              >
-                <option value="all">All Categories</option>
-                <option value="usage">Usage</option>
-                <option value="account">Account</option>
-                <option value="feedback">Feedback</option>
-                <option value="education">Education</option>
-                <option value="career">Career</option>
-              </select>
-              <select
-                value={generatedFilter}
-                onChange={(e) => setGeneratedFilter(e.target.value)}
-                style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
-              >
-                <option value="all">All Sources</option>
-                <option value="generated">Generated</option>
-                <option value="real">Real</option>
-              </select>
+
+
+
 
             </div>
           </div>
@@ -393,9 +367,41 @@ export default function Home() {
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10, width: 30 }}></th>
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Sender</th>
                   <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Subject</th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Date</th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>Category</th>
-                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>LLM-Generated</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>
+                    <button
+                      onClick={() => setSortOrder(o => o === "desc" ? "asc" : "desc")}
+                      style={{ background: "none", border: "none", color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", transition: "color 0.15s" }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = COLORS.accent}
+                      onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
+                    >
+                      Date {sortOrder === "desc" ? "↓" : "↑"}
+                    </button>
+                  </th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="usage">Usage</option>
+                      <option value="account">Account</option>
+                      <option value="feedback">Feedback</option>
+                      <option value="education">Education</option>
+                      <option value="career">Career</option>
+                    </select>
+                  </th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", color: COLORS.muted, fontWeight: 400, borderBottom: `1px solid ${COLORS.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: 1, fontSize: 10 }}>
+                    <select
+                      value={generatedFilter}
+                      onChange={(e) => setGeneratedFilter(e.target.value)}
+                      style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, color: COLORS.muted, fontSize: 11, cursor: "pointer", letterSpacing: 1, textTransform: "uppercase", borderRadius: 4, padding: "2px 6px", fontFamily: "'DM Mono', monospace" }}
+                    >
+                      <option value="all">All Sources</option>
+                      <option value="generated">Generated</option>
+                      <option value="real">Real</option>
+                    </select>
+                  </th>
                 </tr>
               </thead>
               <tbody>
