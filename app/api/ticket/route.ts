@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
     const token = formData.get('token')?.toString() || ''
     const signature = formData.get('signature')?.toString() || ''
 
+    console.log(signature)
+
     console.log("verifying mailgun sig...")
     try {
       if (!verifyMailgunSignature(timestamp, token, signature)) {
