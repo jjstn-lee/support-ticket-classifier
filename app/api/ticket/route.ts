@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const { error } = await supabase.from('tickets').insert({
       // id: ticketId,
       sender,
-      timestamp: //timest ? new Date(parseInt(dateHeader) * 1000).toISOString() : new Date().toISOString(),
+      timestamp, //timest ? new Date(parseInt(dateHeader) * 1000).toISOString() : new Date().toISOString(),
       subject,
       body,
       category,
