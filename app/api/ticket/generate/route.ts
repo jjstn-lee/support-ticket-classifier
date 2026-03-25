@@ -6,7 +6,7 @@ import { generateMailgunSignature } from '@/lib/mailgun/signature'
 const recipient = "ticket@justin-hisung-lee.dev"
 
 
-async function generate(retries = 3, delay = 1000) {
+async function generate(retries = 3, delay = 2500) {
   let lastError;
   
       for (let i = 0; i < retries; i++) {

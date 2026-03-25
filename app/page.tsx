@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Cell,
 } from "recharts";
+import { IoLogoGithub } from 'react-icons/io5';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Ticket {
@@ -110,6 +111,7 @@ export default function Home() {
   const [generateStatus, setGenerateStatus] = useState<string | null>(null);
   const [showGenerateTooltip, setShowGenerateTooltip] = useState<boolean>(false);
   const [showRefreshTooltip, setShowRefreshTooltip] = useState<boolean>(false);
+  const [showMailTooltip, setShowMailTooltip] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -121,8 +123,22 @@ export default function Home() {
         fetch('/api/ticket/stats', { method: 'GET' })
       ]);
 
-      if (!ticketsRes.ok || !statsRes.ok) {
-        throw new Error('Failed to fetch data');
+      if (!ticketsRes.ok) {
+        let errorMsg = `GET /api/ticket failed (${ticketsRes.status})`;
+        try {
+          const data = await ticketsRes.json();
+          if (data.error) errorMsg = `Tickets API: ${data.error}`;
+        } catch { }
+        throw new Error(errorMsg);
+      }
+
+      if (!statsRes.ok) {
+        let errorMsg = `GET /api/ticket/stats failed (${statsRes.status})`;
+        try {
+          const data = await statsRes.json();
+          if (data.error) errorMsg = `Stats API: ${data.error}`;
+        } catch { }
+        throw new Error(errorMsg);
       }
 
       const ticketsData = await ticketsRes.json();
@@ -131,7 +147,8 @@ export default function Home() {
       setTickets(ticketsData.tickets || []);
       setStats(statsData);
     } catch (err) {
-      setErrors(prev => [...prev, err instanceof Error ? err.message : 'Failed to load data']);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load data';
+      setErrors(prev => [...prev, errorMsg]);
       setTickets([]);
       setStats(null);
     } finally {
@@ -202,12 +219,34 @@ export default function Home() {
           100% { opacity: 0; transform: translateX(100%); }
         }
         .ticket-swipe-out { animation: swipeOut 300ms ease-out forwards; }
+        @keyframes slideIn {
+          0% { opacity: 0; transform: translateX(20px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
       `}</style>
 
       {/* Top Nav */}
       <div style={{ borderBottom: `2px solid ${COLORS.border}`, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", background: COLORS.surface }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "'Noto Sans', sans-serif", fontWeight: 600, fontSize: 15 }}>Support Ticket Classifier</span>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily: "'Noto Sans', sans-serif",
+              fontWeight: 600,
+              fontSize: 15
+            }}
+          >
+            Support Ticket Classifier
+            <a
+              href="https://github.com/jjstn-lee/support-ticket-classifier"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <IoLogoGithub className="transition-colors text-base-content" />
+            </a>
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {/* <span style={{ color: COLORS.muted, fontSize: 11 }}>{stats?.total} tickets</span> */}
@@ -220,7 +259,10 @@ export default function Home() {
                   setGenerateStatus("Generating…");
                   try {
                     const response = await fetch('/api/ticket/generate', { method: 'POST' });
-                    if (!response.ok) throw new Error(`Generate failed (${response.status})`);
+                    if (!response.ok) {
+                      const errorMsg = `Generating new email failed, most likely a rate limiting issue with the mlvoca API. Try again later.`;
+                      throw new Error(errorMsg);
+                    }
                     const result = await response.json();
                     console.log(result);
                     setGenerateStatus("Generated");
@@ -229,6 +271,7 @@ export default function Home() {
                     const msg = err instanceof Error ? err.message : "Failed to generate";
                     console.error(err);
                     setGenerateStatus(msg);
+                    setErrors(prev => [...prev, `Generation: ${msg}`]);
                   } finally {
                     setGenerating(false);
                     // clear status after a short delay
@@ -373,8 +416,40 @@ export default function Home() {
 
         {/* Raw Table */}
         <div style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, textTransform: "uppercase", display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'DM Mono', monospace" }}>
-            <span>Ticket Log — {displayedTickets.length} records</span>
+          <div style={{ padding: "14px 24px", borderBottom: `1px solid ${COLORS.border}`, fontSize: 11, letterSpacing: 2, color: COLORS.muted, display: "flex", alignItems: "center", justifyContent: "space-between", fontFamily: "'DM Mono', monospace", position: "relative" }}>
+            <div style={{ position: "relative", display: "inline-block" }}
+              onMouseEnter={() => setShowMailTooltip(true)}
+              onMouseLeave={() => setShowMailTooltip(false)}
+            >
+              <span>TICKET@MG.JUSTIN-HISUNG-LEE.DEV</span>
+              <div
+                role="status"
+                aria-hidden={!showMailTooltip}
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  left: 0,
+                  background: COLORS.surface,
+                  border: `2px solid ${COLORS.border}`,
+                  color: COLORS.text,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  width: 260,
+                  boxShadow: "0 8px 24px rgba(2,6,23,0.6)",
+                  zIndex: 40,
+                  opacity: showMailTooltip ? 1 : 0,
+                  transform: showMailTooltip ? "translateY(0)" : "translateY(-6px)",
+                  transition: "opacity 180ms ease, transform 180ms ease",
+                  pointerEvents: showMailTooltip ? "auto" : "none",
+                }}
+              >
+                <div style={{ fontWeight: 600, marginBottom: 6, color: COLORS.accent }}>Support inbox address</div>
+                <div style={{ color: COLORS.muted, lineHeight: 1.3 }}>
+                  Any emails sent to this email address will be processed and shown here.
+                </div>
+              </div>
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
 
 
@@ -472,7 +547,17 @@ export default function Home() {
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ status: newStatus })
                               });
-                              if (!response.ok) throw new Error('Failed to update status');
+
+                              if (!response.ok) {
+                                let errorMsg = `API Error (${response.status})`;
+                                try {
+                                  const errorData = await response.json();
+                                  if (errorData.error) {
+                                    errorMsg = errorData.error;
+                                  }
+                                } catch { }
+                                throw new Error(errorMsg);
+                              }
 
                               const willBeFiltered = statusFilter !== "all" && statusFilter !== newStatus;
 
@@ -490,8 +575,8 @@ export default function Home() {
                                 setTickets(prev => prev ? prev.map(ticket => ticket.id === t.id ? { ...ticket, status: newStatus } : ticket) : null);
                               }
                             } catch (err) {
-                              const msg = err instanceof Error ? err.message : 'Failed to update';
-                              setErrors(prev => [...prev, msg]);
+                              const msg = err instanceof Error ? err.message : 'Failed to update status';
+                              setErrors(prev => [...prev, `Ticket #${t.id}: ${msg}`]);
                             }
                           }}
                           style={{
@@ -565,18 +650,54 @@ export default function Home() {
 
       {/* Error Overlay */}
       {errors.length > 0 && (
-        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000, maxWidth: 300 }}>
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000, maxWidth: 350 }}>
           {errors.map((err, i) => (
-            <div key={i} style={{ background: COLORS.surface, border: `2px solid ${COLORS.border}`, borderRadius: 8, padding: 12, marginBottom: 8, color: COLORS.text, fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', fontFamily: "'DM Mono', monospace" }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ color: COLORS.rose, fontWeight: 600 }}>Error</div>
-                <button onClick={() => setErrors(prev => prev.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: COLORS.muted, cursor: 'pointer', fontSize: 14 }}>×</button>
+            <div
+              key={i}
+              style={{
+                background: COLORS.surface,
+                border: `2px solid ${COLORS.rose}`,
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 8,
+                color: COLORS.text,
+                fontSize: 12,
+                boxShadow: '0 4px 12px rgba(242, 64, 41, 0.2)',
+                fontFamily: "'DM Mono', monospace",
+                animation: 'slideIn 200ms ease-out'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ color: COLORS.rose, fontWeight: 600, marginBottom: 4 }}>⚠ Error</div>
+                  <div style={{ color: COLORS.text, lineHeight: 1.4, wordBreak: 'break-word' }}>{err}</div>
+                </div>
+                <button
+                  onClick={() => setErrors(prev => prev.filter((_, idx) => idx !== i))}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: COLORS.muted,
+                    cursor: 'pointer',
+                    fontSize: 16,
+                    padding: 0,
+                    flexShrink: 0,
+                    transition: 'color 0.15s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = COLORS.rose}
+                  onMouseLeave={(e) => e.currentTarget.style.color = COLORS.muted}
+                >
+                  ×
+                </button>
               </div>
-              <div style={{ marginTop: 8 }}>{err}</div>
             </div>
           ))}
         </div>
       )}
-    </div>
+
+
+    </div >
+
+
   );
 }
