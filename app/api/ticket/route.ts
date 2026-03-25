@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { categorizeEmail } from '@/lib/qwen/categorizer'
+import { categorizeEmail } from '@/lib/deepseek/categorizer'
 import { sendMessage } from '@/lib/mailgun/client'
 import { verifyMailgunSignature } from '@/lib/mailgun/signature';
 import { Category, isCategory } from '@/lib/types';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateCareerEmail, generateEducationEmail, generateUsageEmail } from '@/lib/qwen/generator'
+import { generateCareerEmail, generateEducationEmail, generateUsageEmail } from '@/lib/deepseek/generator'
 import { generateMailgunSignature } from '@/lib/mailgun/signature'
 
 // HARD CODED JSON MEMBERS

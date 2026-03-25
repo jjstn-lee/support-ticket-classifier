@@ -88,6 +88,8 @@ export default function Home() {
   const [showMailTooltip, setShowMailTooltip] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const PAGE_SIZE = 20;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const displayedTickets = useMemo(() => (tickets ?? [])
     .filter(t => categoryFilter === "all" || t.category === categoryFilter)
@@ -97,6 +99,13 @@ export default function Home() {
       const diff = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
       return sortOrder === "asc" ? diff : -diff;
     }), [tickets, categoryFilter, generatedFilter, statusFilter, sortOrder]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [displayedTickets]);
+
+  const totalPages = Math.max(1, Math.ceil(displayedTickets.length / PAGE_SIZE));
+  const pagedTickets = displayedTickets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const fetchData = useCallback(async (showLoadingSpinner = false) => {
     try {
@@ -449,7 +458,7 @@ export default function Home() {
 
             </div>
           </div>
-          <div style={{ overflowX: "auto", maxHeight: "600px", overflowY: "auto" }}>
+          <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead style={{ position: "sticky", top: 0, background: COLORS.surface }}>
                 <tr>
@@ -506,7 +515,7 @@ export default function Home() {
                 </tr>
               </thead>
               <tbody>
-                {displayedTickets.map((t, i) => (
+                {pagedTickets.map((t, i) => (
                   <>
                     <tr key={t.id}
                       className={animatingOut.has(t.id) ? "ticket-swipe-out" : ""}
@@ -636,6 +645,24 @@ export default function Home() {
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", borderTop: `1px solid ${COLORS.border}`, fontFamily: "'DM Mono', monospace", fontSize: 11, color: COLORS.muted }}>
+                <span>{(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, displayedTickets.length)} of {displayedTickets.length}</span>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    style={{ background: "none", border: `1px solid ${COLORS.border}`, color: currentPage === 1 ? COLORS.border : COLORS.muted, borderRadius: 4, padding: "4px 10px", cursor: currentPage === 1 ? "default" : "pointer", fontFamily: "'DM Mono', monospace", fontSize: 11 }}
+                  >← prev</button>
+                  <span style={{ padding: "4px 8px" }}>{currentPage} / {totalPages}</span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{ background: "none", border: `1px solid ${COLORS.border}`, color: currentPage === totalPages ? COLORS.border : COLORS.muted, borderRadius: 4, padding: "4px 10px", cursor: currentPage === totalPages ? "default" : "pointer", fontFamily: "'DM Mono', monospace", fontSize: 11 }}
+                  >next →</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
