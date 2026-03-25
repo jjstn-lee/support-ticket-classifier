@@ -1,5 +1,3 @@
-This is a [Next.js](https://nextjs.org) project for managing and classifying support tickets with AI-powered categorization.
-
 # Support Ticket Classifier
 
 LLM-powered application for managing and classifying support tickets with AI-powered categorization and real-time analytics.
@@ -32,6 +30,7 @@ LLM-powered application for managing and classifying support tickets with AI-pow
 
 ## Architecture
 
+![Architecture here](support-ticket-architecture.png)
 
 ## Project Structure
 
