@@ -7,7 +7,7 @@ const MODEL = "deepseek-r1:1.5b";
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 const BASE_CONTEXT = `
-You are currently enrolled at 'Emerge Career', a career development platform that offers educational content, coaching, and job placement services specifically
+You are currently enrolled at a career development platform that offers educational content, coaching, and job placement services specifically
 around CDLs/truck driving and other blue-collared work. You are running into issues with their product. Your task is to write an email complaint to the support
 team as a JSON object. Output ONLY one valid JSON object with EXACTLY these 3 keys: "sender", "subject", and "stripped-text".
 
